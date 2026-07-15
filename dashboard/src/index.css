@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #090d16;
+  }
+  
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(15, 231, 255, 0.02);
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.2s ease-in-out;
+}
+.glass-panel-hover:hover {
+  border-color: rgba(14, 165, 233, 0.4);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.15);
+}
+
+/* Custom Cyber Gasket Glows */
+.glow-critical {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
+}
+
+.glow-high {
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.25);
+}
+
+.glow-medium {
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
+}
+
+.glow-accent {
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0ea5e9;
+}
