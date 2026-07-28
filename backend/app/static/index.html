@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEGIS SIEM — Security Operations Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #080d1a; color: #f1f5f9; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card:hover {
+      border-color: rgba(14, 165, 233, 0.4);
+      box-shadow: 0 0 20px rgba(14, 165, 233, 0.15);
+    }
+    .glow-critical { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080d1a; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-sky-500 selection:text-white min-h-screen flex">
+
+  <!-- Sidebar Navigation -->
+  <aside className="w-64 bg-[#0b1120] border-r border-slate-800/80 flex flex-col justify-between h-screen sticky top-0 z-30 shrink-0">
+    <div className="w-64 bg-[#0b1120] border-r border-slate-800/80 flex flex-col justify-between h-screen sticky top-0 z-30 shrink-0">
+      <div>
+        <div className="p-6 border-b border-slate-800/80 flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-bold text-xl">
+            🛡️
+          </div>
+          <div>
+            <h1 className="font-bold text-lg text-white tracking-wide leading-tight">AEGIS SIEM</h1>
+            <p className="text-xs text-sky-400 font-mono flex items-center gap-1.5 mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              LIVE ENGINE ACTIVE
+            </p>
+          </div>
+        </div>
+
+        <nav className="p-4 space-y-1.5">
+          <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-sky-500/10 text-sky-400 border border-sky-500/30">
+            <span>📊 SOC Overview</span>
+          </button>
+          <button onclick="switchTab('logs')" id="nav-logs" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+            <span>🔍 Logs Explorer</span>
+          </button>
+          <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+            <span>🚨 Alert Triage</span>
+          </button>
+          <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+            <span>📈 Security Analytics</span>
+          </button>
+          <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+            <span>📄 Reports & Audit</span>
+          </button>
+        </nav>
+      </div>
+
+      <div className="p-4 border-t border-slate-800/80 bg-[#070c18]">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sky-400 text-sm font-mono">A</div>
+          <div>
+            <p class="text-sm font-semibold text-slate-200 leading-none">Security Analyst</p>
+            <p class="text-xs text-emerald-400 mt-1 font-mono">JWT Authenticated</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <header class="h-16 bg-[#0b1120]/90 backdrop-blur-md border-b border-slate-800/80 px-8 flex items-center justify-between sticky top-0 z-20">
+      <h2 id="page-title" class="text-xl font-bold text-white tracking-tight">Security Operations Center (SOC)</h2>
+      <div class="flex items-center space-x-4">
+        <div id="live-clock" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-xs font-mono">--:--:-- UTC</div>
+        <button onclick="refreshData()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition-all">
+          🔄 Refresh Telemetry
+        </button>
+      </div>
+    </header>
+
+    <main class="p-8 space-y-8 max-w-[1600px] w-full mx-auto">
+
+      <!-- TAB 1: SOC OVERVIEW -->
+      <div id="tab-overview" class="tab-content space-y-8">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="p-6 rounded-2xl glass-card transition-all">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Ingested Logs</p>
+            <h3 id="kpi-logs" class="text-3xl font-extrabold text-white mt-2 font-mono">0</h3>
+            <p class="text-xs text-emerald-400 mt-3 font-mono">● Real-time ingestion stream</p>
+          </div>
+
+          <div class="p-6 rounded-2xl glass-card transition-all">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Open Incidents</p>
+            <h3 id="kpi-open-alerts" class="text-3xl font-extrabold text-amber-400 mt-2 font-mono">0</h3>
+            <p id="kpi-total-alerts" class="text-xs text-slate-400 mt-3">0 total generated</p>
+          </div>
+
+          <div class="p-6 rounded-2xl glass-card glow-critical transition-all">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Critical Threats</p>
+            <h3 id="kpi-critical" class="text-3xl font-extrabold text-red-400 mt-2 font-mono">0</h3>
+            <p class="text-xs text-red-400 mt-3 font-semibold">Immediate action required</p>
+          </div>
+
+          <div class="p-6 rounded-2xl glass-card transition-all">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Top Threat Vector</p>
+            <h3 id="kpi-top-ip" class="text-xl font-bold text-sky-400 mt-2 font-mono truncate">None Detected</h3>
+            <p id="kpi-top-ip-count" class="text-xs text-slate-400 mt-3 font-mono">0 security alerts</p>
+          </div>
+        </div>
+
+        <!-- Timeline Chart -->
+        <div class="p-6 rounded-2xl glass-card">
+          <h3 class="text-lg font-bold text-white mb-4">Threat Detection Timeline (24 Hours)</h3>
+          <div class="h-64 w-full">
+            <canvas id="timelineChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Grid: Live Stream & Top Attackers -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div class="lg:col-span-2 p-6 rounded-2xl glass-card space-y-4">
+            <h3 class="text-lg font-bold text-white">Live Security Alert Stream</h3>
+            <div id="alerts-stream" class="space-y-3">
+              <div class="text-slate-500 text-sm py-4">Loading security incidents...</div>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl glass-card space-y-4">
+            <h3 class="text-lg font-bold text-white">Top Attacking Source IPs</h3>
+            <div id="top-attackers-list" class="space-y-3">
+              <div class="text-slate-500 text-sm py-4">Loading attacker rankings...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LOGS EXPLORER -->
+      <div id="tab-logs" class="tab-content hidden space-y-6">
+        <div class="p-6 rounded-2xl glass-card flex flex-wrap gap-4 items-center">
+          <input id="log-search" type="text" placeholder="Search raw log message, user, IP..." class="flex-1 min-w-[280px] bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-sky-500 font-mono">
+          <input id="log-ip" type="text" placeholder="Filter IP..." class="w-40 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-sky-500 font-mono">
+          <select id="log-sev" class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-300 text-sm">
+            <option value="">All Severities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+          <button onclick="fetchLogs()" class="px-5 py-2.5 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-sm font-semibold shadow-md shadow-sky-500/20">
+            Filter Logs
+          </button>
+          <button onclick="exportCSV()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-sm font-medium ml-auto">
+            📥 Export CSV
+          </button>
+        </div>
+
+        <div class="rounded-2xl glass-card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+              <thead class="bg-slate-900 text-xs font-semibold uppercase text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="py-3.5 px-6">Timestamp</th>
+                  <th className="py-3.5 px-6">Severity</th>
+                  <th className="py-3.5 px-6">Source</th>
+                  <th className="py-3.5 px-6">Event Type</th>
+                  <th className="py-3.5 px-6">Source IP</th>
+                  <th className="py-3.5 px-6">User</th>
+                  <th className="py-3.5 px-6">Raw Message</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody" class="divide-y divide-slate-800/60 font-mono text-xs">
+                <tr><td colspan="7" class="text-center py-8 text-slate-500">Loading log events...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ALERT TRIAGE -->
+      <div id="tab-alerts" class="tab-content hidden space-y-6">
+        <div id="alerts-full-list" class="space-y-4">
+          <div class="text-slate-500 text-sm p-6">Loading alerts...</div>
+        </div>
+      </div>
+
+      <!-- TAB 4: ANALYTICS -->
+      <div id="tab-analytics" class="tab-content hidden space-y-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="p-6 rounded-2xl glass-card space-y-4">
+            <h3 class="text-lg font-bold text-white">Incident Severity Distribution</h3>
+            <div class="h-64 w-full flex items-center justify-center">
+              <canvas id="severityPieChart"></canvas>
+            </div>
+          </div>
+
+          <div class="p-6 rounded-2xl glass-card space-y-4">
+            <h3 class="text-lg font-bold text-white">Top Attacking IP Activity</h3>
+            <div class="h-64 w-full">
+              <canvas id="topAttackersBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: REPORTS -->
+      <div id="tab-reports" class="tab-content hidden space-y-6">
+        <div class="p-8 rounded-2xl glass-card space-y-6">
+          <h3 class="text-xl font-bold text-white">Generate Executive PDF Security Report</h3>
+          <p class="text-sm text-slate-400">Download a formatted PDF executive threat report with telemetry metrics, top attacking IPs, and incident logs.</p>
+          <button onclick="downloadPDFReport()" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white rounded-xl font-bold text-sm shadow-lg shadow-sky-500/20">
+            📄 Download Executive PDF Report
+          </button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = '/api/v1';
+    let token = '';
+    let timelineChartInstance = null;
+    let pieChartInstance = null;
+    let barChartInstance = null;
+
+    // Auto Login
+    async function autoLogin() {
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username: 'admin', password: 'admin123'})
+        });
+        const data = await res.json();
+        token = data.access_token;
+        refreshData();
+      } catch (e) {
+        console.error("Auto login error:", e);
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('bg-sky-500/10', 'text-sky-400', 'border', 'border-sky-500/30');
+        el.classList.add('text-slate-400');
+      });
+      
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if(activeNav) {
+        activeNav.classList.add('bg-sky-500/10', 'text-sky-400', 'border', 'border-sky-500/30');
+        activeNav.classList.remove('text-slate-400');
+      }
+
+      const titles = {
+        overview: 'Security Operations Center (SOC)',
+        logs: 'Logs Explorer & Threat Search',
+        alerts: 'Alert Triage & Incident Management',
+        analytics: 'Security Intelligence Analytics',
+        reports: 'Reports & Audit Compliance'
+      };
+      document.getElementById('page-title').innerText = titles[tabId] || 'SIEM Console';
+
+      if (tabId === 'logs') fetchLogs();
+      if (tabId === 'alerts') fetchFullAlerts();
+      if (tabId === 'analytics') renderAnalytics();
+    }
+
+    async function refreshData() {
+      if (!token) await autoLogin();
+      
+      try {
+        // Fetch Overview Stats
+        const statsRes = await fetch(`${API_BASE}/stats/overview`, { headers: {'Authorization': `Bearer ${token}`} });
+        const stats = await statsRes.json();
+        
+        document.getElementById('kpi-logs').innerText = (stats.total_logs || 0).toLocaleString();
+        document.getElementById('kpi-open-alerts').innerText = (stats.open_alerts || 0).toLocaleString();
+        document.getElementById('kpi-total-alerts').innerText = `${stats.total_alerts || 0} total generated`;
+        document.getElementById('kpi-critical').innerText = (stats.critical_alerts || 0).toLocaleString();
+        
+        if (stats.top_attackers && stats.top_attackers.length > 0) {
+          document.getElementById('kpi-top-ip').innerText = stats.top_attackers[0].src_ip;
+          document.getElementById('kpi-top-ip-count').innerText = `${stats.top_attackers[0].alert_count} security alerts`;
+        }
+
+        // Render Top Attackers List
+        const attackersContainer = document.getElementById('top-attackers-list');
+        if (stats.top_attackers && stats.top_attackers.length > 0) {
+          attackersContainer.innerHTML = stats.top_attackers.map((att, i) => `
+            <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <span class="w-6 h-6 rounded bg-slate-800 text-xs font-bold text-sky-400 flex items-center justify-center font-mono">#${i+1}</span>
+                <div>
+                  <p class="text-sm font-mono font-bold text-slate-200">${att.src_ip}</p>
+                  <p class="text-xs text-slate-500">${att.log_count} log events</p>
+                </div>
+              </div>
+              <span class="text-xs font-bold text-red-400 font-mono">${att.alert_count} Alerts</span>
+            </div>
+          `).join('');
+        } else {
+          attackersContainer.innerHTML = `<div class="text-slate-500 text-sm py-4">No attacker IPs logged yet.</div>`;
+        }
+
+        // Fetch Recent Alerts
+        const alertsRes = await fetch(`${API_BASE}/alerts?page=1&page_size=6`, { headers: {'Authorization': `Bearer ${token}`} });
+        const alertsData = await alertsRes.json();
+        const streamContainer = document.getElementById('alerts-stream');
+        if (alertsData.items && alertsData.items.length > 0) {
+          streamContainer.innerHTML = alertsData.items.map(a => `
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${a.severity==='critical'?'bg-red-500/20 text-red-400 border border-red-500/40':a.severity==='high'?'bg-orange-500/20 text-orange-400':a.severity==='medium'?'bg-yellow-500/20 text-yellow-400':'bg-blue-500/20 text-blue-400'}">${a.severity}</span>
+                  <span class="font-bold text-sm text-slate-100">${a.title}</span>
+                </div>
+                <p class="text-xs text-slate-400">${a.description}</p>
+              </div>
+              <span class="px-3 py-1 rounded text-xs font-mono capitalize ${a.status==='open'?'bg-amber-500/10 text-amber-400 border border-amber-500/20':'bg-emerald-500/10 text-emerald-400'}">${a.status}</span>
+            </div>
+          `).join('');
+        } else {
+          streamContainer.innerHTML = `<div class="text-slate-500 text-sm py-4">No security alerts logged yet.</div>`;
+        }
+
+        // Fetch Trends
+        const trendsRes = await fetch(`${API_BASE}/alerts/trends?hours=24`, { headers: {'Authorization': `Bearer ${token}`} });
+        const trendsData = await trendsRes.json();
+        renderTimelineChart(trendsData);
+
+      } catch (e) {
+        console.error("Error refreshing telemetry:", e);
+      }
+    }
+
+    function renderTimelineChart(data) {
+      const ctx = document.getElementById('timelineChart').getContext('2d');
+      const labels = data.map(d => d.time.split(' ')[1] || d.time);
+      const totals = data.map(d => d.total);
+
+      if (timelineChartInstance) timelineChartInstance.destroy();
+      timelineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Detected Incidents',
+            data: totals,
+            borderColor: '#0ea5e9',
+            backgroundColor: 'rgba(14, 165, 233, 0.15)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    async function fetchLogs() {
+      const q = document.getElementById('log-search').value;
+      const ip = document.getElementById('log-ip').value;
+      const sev = document.getElementById('log-sev').value;
+      let url = `${API_BASE}/logs?page=1&page_size=25`;
+      if (q) url += `&search=${encodeURIComponent(q)}`;
+      if (ip) url += `&src_ip=${encodeURIComponent(ip)}`;
+      if (sev) url += `&severity=${encodeURIComponent(sev)}`;
+
+      const res = await fetch(url, { headers: {'Authorization': `Bearer ${token}`} });
+      const data = await res.json();
+      const tbody = document.getElementById('logs-tbody');
+      if (data.items && data.items.length > 0) {
+        tbody.innerHTML = data.items.map(l => `
+          <tr class="hover:bg-slate-800/40">
+            <td class="py-3 px-6 text-slate-400 whitespace-nowrap">${new Date(l.timestamp).toLocaleString()}</td>
+            <td class="py-3 px-6"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${l.severity==='critical'?'bg-red-500/20 text-red-400':l.severity==='high'?'bg-orange-500/20 text-orange-400':l.severity==='medium'?'bg-yellow-500/20 text-yellow-400':'bg-blue-500/20 text-blue-400'}">${l.severity}</span></td>
+            <td class="py-3 px-6 text-sky-400 font-bold uppercase">${l.source_type}</td>
+            <td class="py-3 px-6 text-slate-300 capitalize">${l.event_type}</td>
+            <td class="py-3 px-6 text-slate-200">${l.src_ip || '-'}</td>
+            <td class="py-3 px-6 text-amber-400">${l.user || '-'}</td>
+            <td class="py-3 px-6 text-slate-300 truncate max-w-md">${l.message_raw}</td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500">No log entries found.</td></tr>`;
+      }
+    }
+
+    async function fetchFullAlerts() {
+      const res = await fetch(`${API_BASE}/alerts?page=1&page_size=20`, { headers: {'Authorization': `Bearer ${token}`} });
+      const data = await res.json();
+      const container = document.getElementById('alerts-full-list');
+      if (data.items && data.items.length > 0) {
+        container.innerHTML = data.items.map(a => `
+          <div class="p-6 rounded-2xl glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="space-y-2">
+              <div class="flex items-center space-x-3">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${a.severity==='critical'?'bg-red-500/20 text-red-400 border border-red-500/40':a.severity==='high'?'bg-orange-500/20 text-orange-400':a.severity==='medium'?'bg-yellow-500/20 text-yellow-400':'bg-blue-500/20 text-blue-400'}">${a.severity}</span>
+                <span class="font-mono text-xs text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Rule: ${a.rule_name}</span>
+              </div>
+              <h3 class="text-lg font-bold text-white">${a.title}</h3>
+              <p class="text-sm text-slate-300">${a.description}</p>
+              <p class="text-xs font-mono text-slate-400">Source IP: <strong class="text-sky-400">${a.src_ip || 'N/A'}</strong></p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="updateAlertStatus(${a.id}, 'open')" class="px-3 py-1 rounded text-xs ${a.status==='open'?'bg-amber-500/20 text-amber-400 font-bold':'bg-slate-800 text-slate-400'}">Open</button>
+              <button onclick="updateAlertStatus(${a.id}, 'acknowledged')" class="px-3 py-1 rounded text-xs ${a.status==='acknowledged'?'bg-sky-500/20 text-sky-400 font-bold':'bg-slate-800 text-slate-400'}">Ack</button>
+              <button onclick="updateAlertStatus(${a.id}, 'resolved')" class="px-3 py-1 rounded text-xs ${a.status==='resolved'?'bg-emerald-500/20 text-emerald-400 font-bold':'bg-slate-800 text-slate-400'}">Resolved</button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        container.innerHTML = `<div class="text-slate-500 p-6">No security alerts found.</div>`;
+      }
+    }
+
+    async function updateAlertStatus(id, newStatus) {
+      await fetch(`${API_BASE}/alerts/${id}/status`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+        body: JSON.stringify({status: newStatus})
+      });
+      fetchFullAlerts();
+    }
+
+    async function exportCSV() {
+      window.location.href = `${API_BASE}/logs/export.csv`;
+    }
+
+    async function downloadPDFReport() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 35, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text('SIEM Threat Intelligence Executive Report', 14, 22);
+
+      const statsRes = await fetch(`${API_BASE}/stats/overview`, { headers: {'Authorization': `Bearer ${token}`} });
+      const stats = await statsRes.json();
+
+      doc.autoTable({
+        startY: 45,
+        head: [['Telemetry Metric', 'Value']],
+        body: [
+          ['Total Log Events', (stats.total_logs || 0).toLocaleString()],
+          ['Total Incidents Triggered', (stats.total_alerts || 0).toLocaleString()],
+          ['Open Security Incidents', (stats.open_alerts || 0).toLocaleString()],
+          ['Critical Threats', (stats.critical_alerts || 0).toLocaleString()],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [14, 165, 233] }
+      });
+
+      doc.save(`siem_report_${Date.now()}.pdf`);
+    }
+
+    setInterval(() => {
+      document.getElementById('live-clock').innerText = new Date().toLocaleTimeString() + ' UTC';
+    }, 1000);
+
+    // Initial boot
+    autoLogin();
+    setInterval(refreshData, 10000);
+  </script>
+</body>
+</html>
