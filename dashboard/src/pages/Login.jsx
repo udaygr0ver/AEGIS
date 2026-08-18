@@ -3,8 +3,8 @@ import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 import { authAPI } from '../services/api';
 
 export default function Login({ onLoginSuccess }) {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +36,7 @@ export default function Login({ onLoginSuccess }) {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-400 mb-4 shadow-lg shadow-sky-500/20">
             <Shield className="w-9 h-9 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">SIEM Analytics Console</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">AEGIS Analytics Console</h2>
           <p className="text-sm text-slate-400 mt-1">Security Information & Event Management System</p>
         </div>
 
@@ -76,11 +76,6 @@ export default function Login({ onLoginSuccess }) {
                 placeholder="Enter password"
               />
             </div>
-          </div>
-
-          <div className="p-3 rounded-lg bg-sky-500/5 border border-sky-500/20 text-xs text-sky-300 flex justify-between items-center">
-            <span>Default Login Credentials:</span>
-            <span className="font-mono bg-sky-950 px-2 py-0.5 rounded border border-sky-800">admin / admin123</span>
           </div>
 
           <button
